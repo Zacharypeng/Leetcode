@@ -1,6 +1,7 @@
 /*
 	Basic Union Find
 	find neighbors(consecutive numbers)
+	Notice! when there are dupilcated numbers!!
 */
 
 class Solution {
