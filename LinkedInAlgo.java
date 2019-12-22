@@ -659,6 +659,7 @@ class RandomizedSet {
     50. Pow(x, n)
 
     Notice:
+        difference between float and double and long !!!
         int power index could overflow!! 
         when casting to long, always surround the target value with parenthese!!
 */
@@ -667,6 +668,466 @@ public double myPow(double x, int n) {
     if (n < 0) x = 1 / x;        
     long p = Math.abs((long) n);
     return p % 2 == 1 ? x * myPow(x * x, (int) (p / 2)) : myPow(x * x, (int) (p / 2));
+}        
+
+
+/*
+    277. Find the Celebrity
+
+    Notice:
+        it's true that we only need to check [0, candidate)
+        but we still have to go into the second looop for checking
+        if candidate == 0, then there is not chance to enter the loop, if we loop in [0, candidate)
+*/
+public int findCelebrity(int n) {
+    int candidate = 0;
+    for (int i = 1; i < n; i++) {
+        if (knows(candidate, i))
+            candidate = i;
+    }
+    for (int i = 0; i < n; i++) {
+        if (i != candidate && (knows(candidate, i) || !knows(i, candidate)))
+            return -1;
+        if (i > candidate) return candidate;
+    }
+    return candidate;
+}        
+
+
+/*
+    297. Serialize and Deserialize Binary Tree
+
+    Notice:
+        for serialize, traditional bfs; continue when hitting null, otherwise offer node into the queue
+        string comparasion use equals!!!
+*/
+public class Codec {
+
+    // Encodes a tree to a single string.
+    public String serialize(TreeNode root) {
+        if (root == null) return "";
+        Queue<TreeNode> q = new LinkedList<>();
+        q.offer(root);
+        StringBuilder sb = new StringBuilder();
+        while (!q.isEmpty()) {
+            TreeNode node = q.poll();
+            if (node == null) {
+                sb.append("n ");
+                continue;
+            }         
+            sb.append(node.val + " ");
+            q.offer(node.left);
+            q.offer(node.right);
+        }        
+        return sb.toString().trim();
+    }
+
+    // Decodes your encoded data to tree.
+    public TreeNode deserialize(String data) {
+        if (data.length() == 0) return null;
+        String[] strs = data.split(" ");
+        Queue<TreeNode> q = new LinkedList<>();
+        TreeNode root = new TreeNode(Integer.parseInt(strs[0]));
+        q.offer(root);
+        for (int i = 1; i < strs.length; i++) {
+            TreeNode node = q.poll();
+            if (!strs[i].equals("n")) {
+                int leftVal = Integer.parseInt(strs[i]);
+                TreeNode left = new TreeNode(leftVal);
+                node.left = left;
+                q.offer(left);
+            }            
+            i++;
+            if (!strs[i].equals("n")) {
+                int rightVal = Integer.parseInt(strs[i]);
+                TreeNode right = new TreeNode(rightVal);
+                node.right = right;
+                q.offer(right);
+            }
+        }
+        return root;
+    }
+}
+
+/*
+    56. Merge Intervals
+    Input: [[1,3],[2,6],[8,10],[15,18]]
+    Output: [[1,6],[8,10],[15,18]]
+*/
+public int[][] merge(int[][] intervals) {
+    if (intervals.length <= 1)
+        return intervals;
+
+    // Sort by ascending starting point
+    Arrays.sort(intervals, (i1, i2) -> Integer.compare(i1[0], i2[0]));
+
+    List<int[]> result = new ArrayList<>();
+    int[] newInterval = intervals[0];
+    result.add(newInterval);
+    for (int[] interval : intervals) {
+        if (interval[0] <= newInterval[1]) // Overlapping intervals, move the end if needed
+            newInterval[1] = Math.max(newInterval[1], interval[1]);
+        else {                             // Disjoint intervals, add the new interval to the list
+            newInterval = interval;
+            result.add(newInterval);
+        }
+    }
+
+    return result.toArray(new int[result.size()][]);
+}
+
+
+/*
+    341. Flatten Nested List Iterator
+    Input: [[1,1],2,[1,1]]
+    Output: [1,1,2,1,1]
+
+    Notice:
+        increment cnt only AFTER getting next number!!
+*/
+public class NestedIterator implements Iterator<Integer> {
+
+    List<Integer> list;
+    int cnt;
+    public NestedIterator(List<NestedInteger> nestedList) {
+        list = new ArrayList<>();
+        cnt = 0;
+        helper(list, nestedList);
+    }
+    
+    private void helper(List<Integer> list, List<NestedInteger> nl) {
+        for (NestedInteger n: nl) {
+            if (n.isInteger()) list.add(n.getInteger());
+            else helper(list, n.getList());
+        }
+    }
+
+    @Override
+    public Integer next() {        
+        Integer n =  cnt < list.size() ? list.get(cnt) : null;
+        cnt++;
+        return n;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return cnt < list.size();
+    }
+}
+
+
+/*
+    261. Graph Valid Tree
+    Input: n = 5, and edges = [[0,1], [0,2], [0,3], [1,4]]
+    Output: true
+
+    Note:
+        keep union vertices. So for every new encountered vertices, them shouldn't belong to the same set.
+        have to check whether len(edges) == len(vertices) !!
+*/        
+class Solution {
+    public boolean validTree(int n, int[][] edges) {
+        int[] parents = new int[n];
+        for (int i = 0; i < n; i++)
+            parents[i] = i;
+        for (int[] e: edges) {
+            int v1 = find(parents, e[0]);
+            int v2 = find(parents, e[1]);
+            if (v1 == v2) return false;
+            parents[v1] = v2;
+        }
+        return edges.length == n - 1;
+    }
+    
+    private int find(int[] p, int v) {
+        if (p[v] == v) return v;
+        return find(p, p[v]);
+    }
+}        
+
+
+/*
+    1028. Recover a Tree From Preorder Traversal
+    Input: "1-2--3--4-5--6--7"
+    Output: [1,2,5,3,4,6,7]
+
+    Note:
+        number of - means the level. 
+        if the stack size is bigger than the depth, it means the node at the peek is already constructed.
+
+    Notice:
+        when calculating the val, it's not += !!
+*/
+public TreeNode recoverFromPreorder(String S) {
+    Stack<TreeNode> stack = new Stack<>();
+    for (int i = 0; i < S.length(); ) {
+        int level, val;
+        for (level = 0; i < S.length() && S.charAt(i) == '-'; i++)
+            level++;
+        for (val = 0; i < S.length() && S.charAt(i) != '-'; i++)
+            val = val * 10 + Integer.parseInt(S.charAt(i) + "");
+        while (stack.size() > level)
+            stack.pop();
+        TreeNode node = new TreeNode(val);
+        if (stack.size() > 0) {
+            if (stack.peek().left == null)
+                stack.peek().left = node;
+            else stack.peek().right = node;
+        }                
+        stack.push(node);
+    }
+    while (stack.size() > 1)
+        stack.pop();
+    return stack.pop();
+}        
+
+
+
+/*
+    655. Print Binary Tree
+    Input:
+     1
+    /
+   2
+    Output:
+    [["", "1", ""],
+     ["2", "", ""]]
+*/
+class Solution {
+    public List<List<String>> printTree(TreeNode root) {
+        List<List<String>> ans = new ArrayList<>();
+        int height = find_height(root, 0);      
+        int length = (int)Math.pow(2, height)-1;
+        for(int line = 0; line < height; line++) {
+            List<String> row = new ArrayList<>();
+            for(int i = 0; i < length; i++)
+                row.add("");
+            ans.add(row);
+        }
+        fill_tree(root, ans, 0, length-1, height, 0);
+        return ans;
+    }
+    
+    private int find_height(TreeNode node, int level) {
+        if(node == null) return level;
+        return Math.max(find_height(node.left, level + 1), find_height(node.right, level + 1));
+    }
+    
+    private void fill_tree(TreeNode node, List<List<String>> ans, int left, int right, int height, int level) {
+        if(height == level || node == null) return;
+        int mid = left - (left - right) / 2;
+        ans.get(level).set(mid, String.valueOf(node.val));
+        fill_tree(node.left, ans, left, mid - 1, height, level + 1);
+        fill_tree(node.right, ans, mid + 1, right, height, level + 1);
+    }
+}     
+
+
+/*
+    516. Longest Palindromic Subsequence
+
+    Note:
+        outer loop from right to left; inner loop from left to right; (vice versa)
+        transition table
+*/
+public int longestPalindromeSubseq(String s) {
+    int len = s.length();
+    int[][] dp = new int[len][len];
+    for (int i = len - 1; i >= 0; i--) {
+        dp[i][i] = 1;
+        for (int j = i + 1; j < len; j++) {
+            if (s.charAt(i) == s.charAt(j))
+                dp[i][j] = dp[i+1][j-1] + 2;
+            else dp[i][j] = Math.max(dp[i+1][j], dp[i][j-1]);
+        }
+    }
+    return dp[0][len-1];
+}            
+
+
+/*
+    127. Word Ladder
+    Input:
+    beginWord = "hit",
+    endWord = "cog",
+    wordList = ["hot","dot","dog","lot","log","cog"]
+
+    Output: 5
+
+    Note:
+        check whether wordList contains endWord at the beginning!!
+        two-end BFS
+*/
+public int ladderLength(String beginWord, String endWord, List<String> wordList) {
+    Set<String> end = new HashSet<>();
+    Set<String> begin = new HashSet<>();
+    Set<String> visited = new HashSet<>();
+    begin.add(beginWord);
+    end.add(endWord);
+    Set<String> dict = new HashSet<>();
+    dict.addAll(wordList);
+    if (!dict.contains(endWord)) return 0;
+    int len = 1;
+    while (!begin.isEmpty() && !end.isEmpty()) {
+        if (begin.size() > end.size()) {
+            Set<String> t = begin;
+            begin = end;
+            end = t;
+        }
+        Set<String> temp = new HashSet<>();
+        int size = begin.size();
+        for (String s: begin) {
+            char[] ch = s.toCharArray();
+            for (int i = 0; i < ch.length; i++) {
+                char oldChar = ch[i];
+                for (char c = 'a'; c <= 'z'; c++) {
+                    ch[i] = c;
+                    String target = String.valueOf(ch);
+                    if (end.contains(target)) return len + 1;
+                    if (!visited.contains(target) && dict.contains(target)) {
+                        temp.add(target);
+                        visited.add(target);
+                    }
+                    ch[i] = oldChar;
+                }
+            }
+        }
+        len++;
+        begin = temp;
+    }
+    return 0;
+}        
+
+
+/*
+    126. Word Ladder II
+    Input:
+    beginWord = "hit",
+    endWord = "cog",
+    wordList = ["hot","dot","dog","lot","log","cog"]
+
+    Output:
+    [
+      ["hit","hot","dot","dog","cog"],
+      ["hit","hot","lot","log","cog"]
+    ]
+
+    Note:
+        when to remove candidate list
+        the distance map is to record shortest distance and can be served as a visited set
+        for getting neighbors, check if the changed char is equal to the original char
+*/
+class Solution {
+    public List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList) {
+        Map<String, Set<String>> neighbors = new HashMap<>();
+        Queue<String> q = new LinkedList<>();
+        Map<String, Integer> distance = new HashMap<>();
+        q.offer(beginWord);
+        distance.put(beginWord, 0);
+        Set<String> set = new HashSet<>();
+        set.addAll(wordList);
+        List<List<String>> ans = new ArrayList<>();
+        boolean found = false;
+        int step = 0;
+        while (!q.isEmpty()) {
+            int size = q.size();
+            for (int i = 0; i < size; i++) {
+                String cur = q.poll();
+                Set<String> curNeighbors = getNeighbors(cur, set);
+                neighbors.put(cur, curNeighbors);
+                int curStep = distance.get(cur);
+                for (String n: curNeighbors) {                    
+                    if (!distance.containsKey(n)) {
+                        distance.put(n, curStep + 1);
+                        if (n.equals(endWord))
+                            found = true;
+                        else q.add(n);
+                    }
+                }
+            }
+            if (found) break;
+        }
+        
+        dfs(beginWord, endWord, set, distance, neighbors, ans, new ArrayList<>());
+        return ans;
+    }
+    
+    private void dfs(String start, String end, Set<String> set, Map<String, Integer> distance, Map<String, Set<String>> neighbors, List<List<String>> ans, List<String> curList) {
+        if (start.equals(end)) {
+            curList.add(end);
+            ans.add(new ArrayList<>(curList));
+            curList.remove(curList.size() - 1);
+            return;
+        }
+        curList.add(start);
+        if (neighbors.containsKey(start)) {
+            for (String n: neighbors.get(start)) {
+                if (distance.get(n) == distance.get(start) + 1)
+                    dfs(n, end, set, distance, neighbors, ans, curList);            
+            }            
+        }    
+        curList.remove(curList.size() - 1); 
+    }
+    
+    private Set<String> getNeighbors(String str, Set<String> set) {
+        char[] ch = str.toCharArray();
+        Set<String> neighbors = new HashSet<>();
+        for (int i = 0; i < str.length(); i++) {
+            char oldChar = ch[i];
+            for (char c = 'a'; c <= 'z'; c++) {
+                ch[i] = c;
+                if (c == oldChar) continue;
+                String target = String.valueOf(ch);
+                if (!target.equals(str) && set.contains(target))
+                    neighbors.add(target);
+                ch[i] = oldChar;
+            }
+        }
+        return neighbors;
+    }
+}    
+
+
+
+/*
+    133. Clone Graph
+
+    Notice:
+        put the newNode, right after it has been initiated!
+*/
+/*
+// Definition for a Node.
+class Node {
+    public int val;
+    public List<Node> neighbors;
+
+    public Node() {}
+
+    public Node(int _val,List<Node> _neighbors) {
+        val = _val;
+        neighbors = _neighbors;
+    }
+};
+*/
+class Solution {
+    
+    Map<Integer, Node> map = new HashMap<>();
+    
+    public Node cloneGraph(Node node) {
+        if (node == null) return node;
+        return clone(node);        
+    }
+    
+    private Node clone(Node node) {
+        if (node == null) return null;
+        if (map.containsKey(node.val)) return map.get(node.val);
+        Node n = new Node(node.val, new ArrayList<Node>());
+        map.put(n.val, n);
+        for (Node next: node.neighbors) {
+            n.neighbors.add(clone(next));
+        }        
+        return n;
+    }
 }        
 
 
